@@ -138,6 +138,13 @@ export function useAudioEngine() {
     cancelAnimationFrame(animationFrameId)
   }
 
+  const reset = () => {
+    stop()
+    audioBuffer = null
+    duration.value = 0
+    currentTime.value = 0
+  }
+
   const updateProgress = () => {
     if (!isPlaying.value) return
     currentTime.value = (audioContext.currentTime - startTime) * playbackRate.value

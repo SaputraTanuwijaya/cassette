@@ -32,6 +32,7 @@
         :track="tracks[editingTrack]" 
         :engine="engine"
         @close="editingTrack = null"
+        @reconnect="handleReconnect"
       />
     </section>
 
@@ -63,6 +64,13 @@ const handleEdit = (index) => {
   setTimeout(() => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }, 100)
+}
+
+const handleReconnect = ({ trackId, url }) => {
+  const track = tracks.value.find(t => t.id === trackId)
+  if (track) {
+    track.url = url
+  }
 }
 
 onMounted(async () => {
