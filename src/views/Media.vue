@@ -18,6 +18,7 @@
       <div class="lg:col-span-2">
         <AudioPlayer 
           :engine="engine" 
+          :tracks="tracks"
           @edit="handleEdit"
         />
       </div>

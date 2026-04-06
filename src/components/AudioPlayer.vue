@@ -133,13 +133,13 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useStorage } from '../composables/useStorage'
 
-const props = defineProps(['engine'])
+const props = defineProps(['engine', 'tracks'])
 const emit = defineEmits(['edit'])
 const { usePersistedRef, getItem } = useStorage()
 
-const tracks = usePersistedRef('playlist_tracks', [])
 const currentIndex = usePersistedRef('current_track_index', 0)
 const fileInput = ref(null)
+const isRecalling = ref(false)
 
 const galleryImages = computed(() => getItem('gallery_images', []))
 
@@ -149,27 +149,22 @@ const resolveThumbnail = (track) => {
     const master = galleryImages.value.find(img => img.id === track.thumbnailId)
     return master ? master.base64 : null
   }
-  return track.thumbnail // Fallback for unlinked tracks
+  return track.thumbnail 
 }
 
-const currentTrack = computed(() => tracks.value[currentIndex.value])
+const currentTrack = computed(() => props.tracks[currentIndex.value])
 
 const removeTrack = (index) => {
   if (confirm('Remove this track from playlist?')) {
     if (currentIndex.value === index) {
       props.engine.stop()
     }
-    tracks.value.splice(index, 1)
-    if (currentIndex.value >= tracks.value.length) {
-      currentIndex.value = Math.max(0, tracks.value.length - 1)
+    props.tracks.splice(index, 1)
+    if (currentIndex.value >= props.tracks.length) {
+      currentIndex.value = Math.max(0, props.tracks.length - 1)
     }
   }
 }
-
-// Watch for thumbnail assignment (no longer needed via global slot, but kept for reactivity)
-watch(galleryImages, () => {
-  // Logic to re-render if master images change
-}, { deep: true })
 
 const triggerUpload = () => fileInput.value.click()
 
@@ -177,7 +172,7 @@ const handleFileUpload = (event) => {
   const files = Array.from(event.target.files)
   files.forEach(file => {
     const url = URL.createObjectURL(file)
-    tracks.value.push({
+    props.tracks.push({
       id: Date.now() + Math.random(),
       title: file.name.replace(/\.[^/.]+$/, ""),
       artist: 'UNKNOWN ARTIST',
@@ -192,33 +187,44 @@ const handleFileUpload = (event) => {
     })
   })
   event.target.value = ''
-  if (tracks.value.length === files.length) {
+  if (props.tracks.length === files.length) {
     selectTrack(0)
   }
 }
 
 const selectTrack = async (index) => {
-  currentIndex.value = index
-  const track = tracks.value[index]
+  const track = props.tracks[index]
   if (!track) return
 
-  await props.engine.initContext()
-  await props.engine.loadAudio(track.url)
-  
-  // Apply persisted effects for this track
-  props.engine.playbackRate.value = track.effects.playbackRate
-  props.engine.reverbWet.value = track.effects.reverbWet
-  props.engine.bassGain.value = track.effects.bassGain
-  props.engine.pitch.value = track.effects.pitch
+  currentIndex.value = index
+  isRecalling.value = true // Block auto-saver
+
+  if (track.url) {
+    await props.engine.initContext()
+    await props.engine.loadAudio(track.url)
+  }
+
+  // RECALL saved effects to the engine
+  props.engine.playbackRate.value = track.effects.playbackRate || 1.0
+  props.engine.reverbWet.value = track.effects.reverbWet || 0.0
+  props.engine.bassGain.value = track.effects.bassGain || 0.0
+  props.engine.pitch.value = track.effects.pitch || 0
   
   if (props.engine.isPlaying.value) {
     props.engine.stop()
-    props.engine.play()
+    if (track.url) props.engine.play()
   }
+
+  // Wait for reactivity to settle before unblocking
+  setTimeout(() => { isRecalling.value = false }, 100)
 }
 
 const togglePlay = async () => {
   if (!currentTrack.value) return
+  if (!currentTrack.value.url) {
+    alert('Please reconnect the audio file for this track in the Editor.')
+    return
+  }
   await props.engine.initContext()
   
   if (props.engine.isPlaying.value) {
@@ -232,12 +238,12 @@ const togglePlay = async () => {
 }
 
 const nextTrack = () => {
-  const next = (currentIndex.value + 1) % tracks.value.length
+  const next = (currentIndex.value + 1) % props.tracks.length
   selectTrack(next)
 }
 
 const prevTrack = () => {
-  const prev = (currentIndex.value - 1 + tracks.value.length) % tracks.value.length
+  const prev = (currentIndex.value - 1 + props.tracks.length) % props.tracks.length
   selectTrack(prev)
 }
 
@@ -249,7 +255,7 @@ const formatTime = (seconds) => {
 }
 
 const saveEffects = () => {
-  if (currentTrack.value) {
+  if (currentTrack.value && !isRecalling.value) {
     currentTrack.value.effects = {
       playbackRate: props.engine.playbackRate.value,
       reverbWet: props.engine.reverbWet.value,
@@ -259,7 +265,6 @@ const saveEffects = () => {
   }
 }
 
-// Auto-persist effects when they change on the active track
 watch([
   () => props.engine.playbackRate.value,
   () => props.engine.reverbWet.value,

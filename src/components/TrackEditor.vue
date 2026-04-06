@@ -1,8 +1,8 @@
 <template>
-  <div v-if="track" class="card-surface p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+  <div v-if="track" class="card-surface p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative text-left">
     <div class="flex justify-between items-start">
-      <h3 class="text-sm tracking-[0.4em] font-medium text-muted uppercase">Track Station</h3>
-      <button @click="$emit('close')" class="text-muted hover:text-primary transition-colors text-xs">
+      <h3 class="text-sm tracking-[0.4em] font-medium text-muted uppercase font-sans">Track Station</h3>
+      <button @click="$emit('close')" class="text-muted hover:text-primary transition-colors text-xs font-sans font-bold">
         CLOSE [×]
       </button>
     </div>
@@ -30,12 +30,12 @@
           </div>
         </div>
         <div class="flex flex-col gap-2 text-center">
-          <p class="text-[10px] text-muted tracking-widest uppercase">
+          <p class="text-[10px] text-muted tracking-widest uppercase font-mono">
             {{ track.thumbnailId ? 'Asset Linked from Gallery' : 'No Asset Linked' }}
           </p>
-          <div v-if="!track.url" class="p-2 bg-red-500/10 border border-red-500/30 rounded-xl">
-             <p class="text-[10px] text-red-500 font-bold uppercase">Audio Disconnected</p>
-             <button @click="reconnect" class="text-[9px] text-primary underline mt-1">RECONNECT FILE</button>
+          <div v-if="!track.url" class="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl">
+             <p class="text-[10px] text-red-500 font-bold uppercase font-sans">Audio Disconnected</p>
+             <button @click="reconnect" class="text-[10px] text-primary underline mt-1 font-bold">RECONNECT FILE</button>
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@
       <div class="flex-1 space-y-8">
         <div class="space-y-6">
           <div class="space-y-2">
-            <label class="text-[10px] tracking-widest text-primary/50 font-bold uppercase">Track Title</label>
+            <label class="text-[10px] tracking-widest text-primary/50 font-bold uppercase font-mono">Track Title</label>
             <input 
               v-model="track.title" 
               class="bg-transparent text-4xl font-display text-primary border-none focus:ring-0 p-0 w-full"
@@ -52,25 +52,45 @@
           </div>
 
           <div class="space-y-2">
-            <label class="text-[10px] tracking-widest text-primary/50 font-bold uppercase">Artist / Author</label>
+            <label class="text-[10px] tracking-widest text-primary/50 font-bold uppercase font-mono">Artist / Author</label>
             <input 
               v-model="track.artist" 
-              class="bg-transparent text-xl text-text border-none focus:ring-0 p-0 w-full tracking-wider uppercase"
+              class="bg-transparent text-xl text-text border-none focus:ring-0 p-0 w-full tracking-wider uppercase font-sans"
             />
           </div>
         </div>
 
-        <!-- Effects Display (Read-only status in Editor) -->
-        <div class="pt-8 border-t border-border grid grid-cols-2 gap-4">
-          <div class="p-4 bg-bg/50 rounded-2xl border border-border/50 font-mono text-xs flex justify-between">
-            <span class="text-muted uppercase">SPEED</span>
-            <span class="text-primary">{{ track.effects.playbackRate.toFixed(2) }}x</span>
+        <!-- FULL EFFECTS READOUT -->
+        <div class="pt-8 border-t border-border space-y-6">
+          <div class="flex justify-between items-center">
+            <label class="text-[10px] tracking-widest text-primary/50 font-bold uppercase font-mono">Saved Studio Config</label>
+            <button @click="resetEffects" class="text-[10px] text-muted hover:text-primary underline uppercase font-bold font-sans">Reset to Defaults</button>
           </div>
+          
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
+            <div class="p-4 bg-bg/50 rounded-2xl border border-border/50 text-center">
+              <div class="text-[9px] text-muted uppercase mb-1">Speed</div>
+              <div class="text-primary text-sm">{{ (track.effects.playbackRate || 1.0).toFixed(2) }}x</div>
+            </div>
+            <div class="p-4 bg-bg/50 rounded-2xl border border-border/50 text-center">
+              <div class="text-[9px] text-muted uppercase mb-1">Bass</div>
+              <div class="text-primary text-sm">{{ track.effects.bassGain || 0 }}dB</div>
+            </div>
+            <div class="p-4 bg-bg/50 rounded-2xl border border-border/50 text-center">
+              <div class="text-[9px] text-muted uppercase mb-1">Reverb</div>
+              <div class="text-primary text-sm">{{ Math.round((track.effects.reverbWet || 0) * 100) }}%</div>
+            </div>
+            <div class="p-4 bg-bg/50 rounded-2xl border border-border/50 text-center">
+              <div class="text-[9px] text-muted uppercase mb-1">Pitch</div>
+              <div class="text-primary text-sm">{{ track.effects.pitch || 0 }}st</div>
+            </div>
+          </div>
+
           <button 
             @click="syncCurrentEffects"
-            class="col-span-2 btn-ghost !py-2 !text-[10px] tracking-[0.2em] font-bold"
+            class="w-full btn-primary !py-3 !text-[10px] tracking-[0.2em] font-bold uppercase"
           >
-            SNAPSHOT CURRENT STUDIO SLIDERS
+            SNAPSHOT CURRENT SLIDERS TO THIS TRACK
           </button>
         </div>
       </div>
@@ -100,7 +120,7 @@
             >
               <img :src="img.base64" class="w-full h-full object-cover" />
               <div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <span class="text-[10px] font-bold tracking-widest bg-bg/80 px-2 py-1 rounded text-primary">SELECT</span>
+                <span class="text-[10px] font-bold tracking-widest bg-bg/80 px-2 py-1 rounded text-primary uppercase">SELECT</span>
               </div>
             </div>
           </div>
@@ -125,14 +145,14 @@ const gallery = ref(getItem('gallery_images', []))
 const reconnectInput = ref(null)
 
 const resolvedThumbnail = computed(() => {
-  if (!props.track.thumbnailId) return props.track.thumbnail // Fallback for old base64 strings
+  if (!props.track.thumbnailId) return props.track.thumbnail 
   const master = gallery.value.find(img => img.id === props.track.thumbnailId)
   return master ? master.base64 : null
 })
 
 const pickImage = (id) => {
   props.track.thumbnailId = id
-  props.track.thumbnail = null // Clear old base64 if it existed
+  props.track.thumbnail = null 
   showGallery.value = false
 }
 
@@ -143,6 +163,14 @@ const syncCurrentEffects = () => {
     bassGain: props.engine.bassGain.value,
     pitch: props.engine.pitch.value
   }
+}
+
+const resetEffects = () => {
+  props.engine.playbackRate.value = 1.0
+  props.engine.reverbWet.value = 0.0
+  props.engine.bassGain.value = 0.0
+  props.engine.pitch.value = 0
+  syncCurrentEffects()
 }
 
 const reconnect = () => reconnectInput.value.click()
