@@ -38,10 +38,9 @@ import AudioPlayer from '../components/AudioPlayer.vue'
 import EffectsPanel from '../components/EffectsPanel.vue'
 import VideoPlayer from '../components/VideoPlayer.vue'
 
-const engine = reactive(useAudioEngine())
+const engine = useAudioEngine()
 
 onMounted(async () => {
   // Pre-initialize context on mount if possible, or wait for user interaction
-  // props.engine will be passed to components
 })
 </script>
