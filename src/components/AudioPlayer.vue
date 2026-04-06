@@ -6,8 +6,8 @@
         <!-- Track Thumbnail -->
         <div class="w-32 h-32 rounded-2xl overflow-hidden bg-bg border border-border flex-shrink-0 shadow-[0_0_20px_var(--color-glow)]">
           <img 
-            v-if="currentTrack?.thumbnail" 
-            :src="currentTrack.thumbnail" 
+            v-if="resolveThumbnail(currentTrack)" 
+            :src="resolveThumbnail(currentTrack)" 
             class="w-full h-full object-cover"
           />
           <div v-else class="w-full h-full flex items-center justify-center text-primary/20 text-4xl">
@@ -93,7 +93,7 @@
         @click="selectTrack(index)"
       >
         <div class="w-12 h-12 rounded-lg overflow-hidden bg-bg border border-border flex-shrink-0">
-          <img v-if="track.thumbnail" :src="track.thumbnail" class="w-full h-full object-cover" />
+          <img v-if="resolveThumbnail(track)" :src="resolveThumbnail(track)" class="w-full h-full object-cover" />
           <div v-else class="w-full h-full flex items-center justify-center text-primary/20 text-xs">📼</div>
         </div>
         <div class="flex-1 min-w-0">
@@ -141,6 +141,17 @@ const tracks = usePersistedRef('playlist_tracks', [])
 const currentIndex = usePersistedRef('current_track_index', 0)
 const fileInput = ref(null)
 
+const galleryImages = computed(() => getItem('gallery_images', []))
+
+const resolveThumbnail = (track) => {
+  if (!track) return null
+  if (track.thumbnailId) {
+    const master = galleryImages.value.find(img => img.id === track.thumbnailId)
+    return master ? master.base64 : null
+  }
+  return track.thumbnail // Fallback for unlinked tracks
+}
+
 const currentTrack = computed(() => tracks.value[currentIndex.value])
 
 const removeTrack = (index) => {
@@ -155,12 +166,10 @@ const removeTrack = (index) => {
   }
 }
 
-// Watch for thumbnail assignment from Gallery
-watch(() => getItem('currentThumbnail'), (newThumb) => {
-  if (newThumb && currentTrack.value) {
-    currentTrack.value.thumbnail = newThumb
-  }
-})
+// Watch for thumbnail assignment (no longer needed via global slot, but kept for reactivity)
+watch(galleryImages, () => {
+  // Logic to re-render if master images change
+}, { deep: true })
 
 const triggerUpload = () => fileInput.value.click()
 
@@ -239,17 +248,24 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-// Only sync effects to the track when explicitly playing that track
+const saveEffects = () => {
+  if (currentTrack.value) {
+    currentTrack.value.effects = {
+      playbackRate: props.engine.playbackRate.value,
+      reverbWet: props.engine.reverbWet.value,
+      bassGain: props.engine.bassGain.value,
+      pitch: props.engine.pitch.value
+    }
+  }
+}
+
+// Auto-persist effects when they change on the active track
 watch([
   () => props.engine.playbackRate.value,
   () => props.engine.reverbWet.value,
   () => props.engine.bassGain.value,
   () => props.engine.pitch.value
-], ([rate, reverb, bass, pitch]) => {
-  if (currentTrack.value) {
-    // Note: We don't auto-save here anymore, we'll use the TrackEditor Save button
-  }
-})
+], saveEffects)
 </script>
 
 <style>

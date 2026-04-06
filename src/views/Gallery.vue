@@ -1,12 +1,12 @@
 <template>
   <div class="max-w-7xl mx-auto px-12 py-16 space-y-12 min-h-screen">
     <header class="flex justify-between items-center">
-      <h1 class="text-4xl tracking-widest uppercase">Album Art Wall</h1>
+      <h1 class="text-4xl tracking-widest uppercase">Master Art Gallery</h1>
       <button 
         @click="triggerUpload"
         class="btn-primary flex items-center gap-2"
       >
-        <span class="text-xl">+</span> UPLOAD ART
+        <span class="text-xl">+</span> UPLOAD NEW ART
       </button>
       <input 
         ref="fileInput" 
@@ -26,8 +26,8 @@
       <div class="text-primary text-5xl">
         <span class="opacity-30">🖼️</span>
       </div>
-      <p class="text-muted tracking-wide">No images in your gallery yet.</p>
-      <p class="text-primary/50 text-sm">Click here to upload your first art piece.</p>
+      <p class="text-muted tracking-wide">Gallery is empty.</p>
+      <p class="text-primary/50 text-sm">Upload master assets here to use them in your tracks.</p>
     </div>
 
     <!-- Gallery Grid -->
@@ -37,7 +37,7 @@
     >
       <div 
         v-for="(image, index) in gallery" 
-        :key="index"
+        :key="image.id"
         class="card-surface group relative overflow-hidden"
       >
         <div class="aspect-square w-full mb-6 overflow-hidden rounded-2xl bg-bg shadow-inner border border-border/50">
@@ -53,60 +53,54 @@
             {{ image.name }}
           </p>
           
-          <div class="flex flex-wrap gap-3">
+          <div class="flex gap-3">
             <button 
-              @click="triggerUpdate(index)"
+              @click="triggerChange(index)"
               class="flex-1 btn-ghost !px-2 !py-2 !text-[10px] tracking-widest"
             >
-              UPDATE
-            </button>
-            <button 
-              @click="assignThumbnail(image)"
-              class="flex-1 btn-primary !px-2 !py-2 !text-[10px] tracking-widest"
-            >
-              ASSIGN
+              CHANGE IMAGE
             </button>
             <button 
               @click="deleteImage(index)"
-              class="w-full btn-ghost !border-red-500/50 !text-red-500/50 hover:!bg-red-500/10 !px-2 !py-1 !text-[10px] tracking-widest"
+              class="flex-1 btn-ghost !border-red-500/50 !text-red-500/50 hover:!bg-red-500/10 !px-2 !py-2 !text-[10px] tracking-widest"
             >
               DELETE
             </button>
           </div>
         </div>
-        
-        <!-- Feedback Overlay -->
-        <transition name="fade">
-          <div 
-            v-if="assignedIndex === index" 
-            class="absolute inset-0 bg-primary/90 flex items-center justify-center text-bg font-bold tracking-[0.2em] text-sm z-20 pointer-events-none"
-          >
-            ASSIGNED TO PLAYER
-          </div>
-        </transition>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useStorage } from '../composables/useStorage'
 import { compressImage } from '../utils/image'
 
-const { usePersistedRef, setItem } = useStorage()
+const { usePersistedRef } = useStorage()
 const gallery = usePersistedRef('gallery_images', [])
 const fileInput = ref(null)
-const updateIndex = ref(-1)
-const assignedIndex = ref(-1)
+const changeIndex = ref(-1)
+
+// Migration: Add IDs to existing images if they don't have them
+onMounted(() => {
+  let updated = false
+  gallery.value.forEach(img => {
+    if (!img.id) {
+      img.id = Date.now() + Math.random()
+      updated = true
+    }
+  })
+})
 
 const triggerUpload = () => {
-  updateIndex.value = -1
+  changeIndex.value = -1
   fileInput.value.click()
 }
 
-const triggerUpdate = (index) => {
-  updateIndex.value = index
+const triggerChange = (index) => {
+  changeIndex.value = index
   fileInput.value.click()
 }
 
@@ -119,45 +113,27 @@ const handleFileUpload = (event) => {
     const originalBase64 = e.target.result
     const compressedBase64 = await compressImage(originalBase64)
     
-    if (updateIndex.value > -1) {
-      // Update existing
-      gallery.value[updateIndex.value] = {
-        name: file.name,
-        base64: compressedBase64
-      }
+    if (changeIndex.value > -1) {
+      // Change existing: KEEP THE ID so tracks still point to it
+      gallery.value[changeIndex.value].base64 = compressedBase64
+      gallery.value[changeIndex.value].name = file.name
     } else {
-      // Add new
+      // Add new with unique ID
       gallery.value.push({
+        id: Date.now() + Math.random(),
         name: file.name,
         base64: compressedBase64
       })
     }
     
-    // Clear input
     event.target.value = ''
   }
   reader.readAsDataURL(file)
 }
 
-const assignThumbnail = (image) => {
-  // Store the base64 as the currentThumbnail for the player
-  setItem('currentThumbnail', image.base64)
-  
-  // Flash feedback
-  const idx = gallery.value.indexOf(image)
-  assignedIndex.value = idx
-  setTimeout(() => {
-    assignedIndex.value = -1
-  }, 1500)
-}
-
 const deleteImage = (index) => {
-  if (confirm('Delete this image from gallery?')) {
+  if (confirm('Delete this master asset? Tracks using this image will lose their thumbnail.')) {
     gallery.value.splice(index, 1)
   }
 }
 </script>
-
-<style scoped>
-/* Any additional specific transitions */
-</style>
