@@ -141,7 +141,7 @@ const handleFileUpload = (event) => {
       id: trackId,
       type: isVideo ? 'video' : 'audio',
       title: file.name.replace(/\.[^/.]+$/, ""),
-      artist: 'STUDIO ASSET',
+      artist: 'UNKNOWN ARTIST',
       url,
       videoUrl: isVideo ? url : null,
       duration: 0,
