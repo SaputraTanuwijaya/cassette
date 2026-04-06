@@ -139,6 +139,14 @@ const syncCurrentEffects = () => {
     bassGain: props.engine.bassGain.value,
     pitch: props.engine.pitch.value
   }
+  
+  // Force storage update for the tracks array
+  const tracks = getItem('playlist_tracks', [])
+  const idx = tracks.findIndex(t => t.id === props.track.id)
+  if (idx > -1) {
+    tracks[idx] = JSON.parse(JSON.stringify(props.track))
+    localStorage.setItem('playlist_tracks', JSON.stringify(tracks))
+  }
 }
 
 const resetEffects = () => {

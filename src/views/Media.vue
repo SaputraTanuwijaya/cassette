@@ -2,14 +2,18 @@
   <div class="max-w-7xl mx-auto px-12 py-12 space-y-12 min-h-screen">
     <header class="flex justify-between items-center">
       <h1 class="text-4xl tracking-widest uppercase">Studio Player</h1>
-      <div v-if="engine.isPlaying.value" class="text-xs tracking-[0.4em] text-primary animate-pulse font-bold uppercase">Live Output Active</div>
+      <div v-if="engine.isPlaying.value" class="text-xs tracking-[0.4em] text-primary animate-pulse font-bold uppercase font-mono">Live Output Active</div>
     </header>
 
     <section><EQVisualizer :engine="engine" /></section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-12">
       <div class="lg:col-span-2">
-        <AudioPlayer :engine="engine" :tracks="tracks" />
+        <AudioPlayer 
+          :engine="engine" 
+          :tracks="tracks" 
+          v-model:currentIndex="currentIndex"
+        />
       </div>
       <div>
         <EffectsPanel :engine="engine" />
@@ -26,13 +30,13 @@
     </section>
 
     <section class="max-w-3xl mx-auto">
-      <VideoPlayer :tracks="tracks" :engine="engine" />
+      <VideoPlayer :track="currentTrack" />
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAudioEngine } from '../composables/useAudioEngine'
 import { useStorage } from '../composables/useStorage'
 import EQVisualizer from '../components/EQVisualizer.vue'
@@ -43,10 +47,11 @@ import TrackEditor from '../components/TrackEditor.vue'
 
 const engine = useAudioEngine()
 const { usePersistedRef, getFile } = useStorage()
+
 const tracks = usePersistedRef('playlist_tracks', [])
 const currentIndex = usePersistedRef('current_track_index', 0)
 
-const currentTrack = computed(() => tracks.value[currentIndex.value])
+const currentTrack = computed(() => tracks.value[currentIndex.value] || null)
 
 const handleReconnect = ({ trackId, url }) => {
   const track = tracks.value.find(t => t.id === trackId)
