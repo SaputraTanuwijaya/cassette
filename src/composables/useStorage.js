@@ -15,6 +15,9 @@ export function useStorage() {
     try {
       localStorage.setItem(key, JSON.stringify(value))
     } catch (error) {
+      if (error.name === 'QuotaExceededError') {
+        alert('Storage quota exceeded! Please delete some images in the Gallery.')
+      }
       console.error(`Error writing ${key} to localStorage:`, error)
     }
   }

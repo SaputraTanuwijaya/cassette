@@ -53,18 +53,24 @@
             {{ image.name }}
           </p>
           
-          <div class="flex gap-3">
+          <div class="flex flex-wrap gap-3">
             <button 
               @click="triggerUpdate(index)"
-              class="flex-1 btn-ghost !px-3 !py-2 !text-xs tracking-widest"
+              class="flex-1 btn-ghost !px-2 !py-2 !text-[10px] tracking-widest"
             >
               UPDATE
             </button>
             <button 
               @click="assignThumbnail(image)"
-              class="flex-1 btn-primary !px-3 !py-2 !text-xs tracking-widest"
+              class="flex-1 btn-primary !px-2 !py-2 !text-[10px] tracking-widest"
             >
               ASSIGN
+            </button>
+            <button 
+              @click="deleteImage(index)"
+              class="w-full btn-ghost !border-red-500/50 !text-red-500/50 hover:!bg-red-500/10 !px-2 !py-1 !text-[10px] tracking-widest"
+            >
+              DELETE
             </button>
           </div>
         </div>
@@ -86,6 +92,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useStorage } from '../composables/useStorage'
+import { compressImage } from '../utils/image'
 
 const { usePersistedRef, setItem } = useStorage()
 const gallery = usePersistedRef('gallery_images', [])
@@ -108,20 +115,21 @@ const handleFileUpload = (event) => {
   if (!file) return
 
   const reader = new FileReader()
-  reader.onload = (e) => {
-    const base64 = e.target.result
+  reader.onload = async (e) => {
+    const originalBase64 = e.target.result
+    const compressedBase64 = await compressImage(originalBase64)
     
     if (updateIndex.value > -1) {
       // Update existing
       gallery.value[updateIndex.value] = {
         name: file.name,
-        base64
+        base64: compressedBase64
       }
     } else {
       // Add new
       gallery.value.push({
         name: file.name,
-        base64
+        base64: compressedBase64
       })
     }
     
@@ -141,6 +149,12 @@ const assignThumbnail = (image) => {
   setTimeout(() => {
     assignedIndex.value = -1
   }, 1500)
+}
+
+const deleteImage = (index) => {
+  if (confirm('Delete this image from gallery?')) {
+    gallery.value.splice(index, 1)
+  }
 }
 </script>
 
