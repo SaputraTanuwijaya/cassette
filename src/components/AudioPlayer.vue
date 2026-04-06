@@ -197,25 +197,31 @@ const selectTrack = async (index) => {
   if (!track) return
 
   currentIndex.value = index
-  isRecalling.value = true // Block auto-saver
+  isRecalling.value = true 
 
   if (track.url) {
     await props.engine.initContext()
     await props.engine.loadAudio(track.url)
+    // Save duration to metadata for persistence
+    track.duration = props.engine.duration.value
   }
 
-  // RECALL saved effects to the engine
+  // RECALL saved effects
   props.engine.playbackRate.value = track.effects.playbackRate || 1.0
   props.engine.reverbWet.value = track.effects.reverbWet || 0.0
   props.engine.bassGain.value = track.effects.bassGain || 0.0
   props.engine.pitch.value = track.effects.pitch || 0
   
+  // Update engine duration if we have it saved but not loaded
+  if (!track.url && track.duration) {
+    props.engine.duration.value = track.duration
+  }
+
   if (props.engine.isPlaying.value) {
     props.engine.stop()
     if (track.url) props.engine.play()
   }
 
-  // Wait for reactivity to settle before unblocking
   setTimeout(() => { isRecalling.value = false }, 100)
 }
 

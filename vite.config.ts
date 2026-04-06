@@ -8,4 +8,8 @@ export default defineConfig({
     vue(),
     tailwindcss(),
   ],
+  server: {
+    host: '0.0.0.0', // Allow access via custom domain if mapped in hosts file
+    allowedHosts: ['cassette.local']
+  }
 })
