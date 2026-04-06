@@ -1,38 +1,51 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #1A1814;
-  --color-surface: #252118;
-  --color-border: #3D3628;
-  --color-primary: #F5C842;
-  --color-secondary: #E8703A;
-  --color-text: #F0E6CC;
-  --color-muted: #8A7D65;
+  --color-bg: #18160F;
+  --color-surface: #221F16;
+  --color-surface-2: #2C2820;
+  --color-border: #35301F;
+  --color-primary: #D4A843;
+  --color-secondary: #C4663A;
+  --color-text: #E8DCC8;
+  --color-muted: #7A6E58;
+  --color-glow: rgba(212, 168, 67, 0.12);
 
   --font-display: "Playfair Display", serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "DM Mono", monospace;
 
-  --shadow-amber: 0 10px 15px -3px rgba(245, 200, 66, 0.2), 0 4px 6px -2px rgba(245, 200, 66, 0.1);
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
 }
 
 @layer base {
   body {
-    @apply bg-bg text-text font-mono;
+    @apply bg-bg text-text font-sans antialiased;
     margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display text-primary;
+    @apply font-display text-primary font-medium;
+  }
+
+  .tech-label {
+    @apply font-mono;
   }
 }
 
-/* Custom Sliders */
-input[type="range"] {
-  @apply accent-primary bg-surface appearance-none h-1 rounded-lg;
-}
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-bg px-8 py-3 rounded-full font-medium transition-all duration-300 hover:opacity-90 active:scale-95;
+  }
+  
+  .btn-ghost {
+    @apply border border-primary text-primary px-8 py-3 rounded-full font-medium transition-all duration-300 hover:bg-primary/10 active:scale-95;
+  }
 
-input[type="range"]::-webkit-slider-thumb {
-  @apply appearance-none w-4 h-4 rounded-full bg-primary cursor-pointer shadow-amber;
+  .card-surface {
+    @apply bg-linear-to-b from-surface to-surface-2 rounded-3xl p-8 border border-border transition-all duration-300 hover:shadow-[0_0_20px_var(--color-glow)];
+  }
 }
 
 /* Transitions */
