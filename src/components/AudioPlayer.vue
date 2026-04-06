@@ -88,9 +88,9 @@
       <div 
         v-for="(track, index) in tracks" 
         :key="track.id"
-        @click="selectTrack(index)"
-        class="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-300 group"
+        class="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-300 group relative"
         :class="currentIndex === index ? 'bg-primary/10 border border-primary/20' : 'hover:bg-surface-2'"
+        @click="selectTrack(index)"
       >
         <div class="w-12 h-12 rounded-lg overflow-hidden bg-bg border border-border flex-shrink-0">
           <img v-if="track.thumbnail" :src="track.thumbnail" class="w-full h-full object-cover" />
@@ -102,7 +102,26 @@
           </div>
           <div class="text-[10px] text-muted tracking-widest uppercase truncate">{{ track.artist }}</div>
         </div>
-        <div v-if="currentIndex === index && engine.isPlaying.value" class="w-4 h-4 text-primary animate-pulse">
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button 
+            @click.stop="$emit('edit', index)"
+            class="p-2 text-primary/60 hover:text-primary transition-colors text-xs"
+            title="Edit Track"
+          >
+            ✏️
+          </button>
+          <button 
+            @click.stop="removeTrack(index)"
+            class="p-2 text-red-500/40 hover:text-red-500 transition-colors text-xs"
+            title="Remove Track"
+          >
+            ❌
+          </button>
+        </div>
+
+        <div v-if="currentIndex === index && engine.isPlaying.value" class="w-4 h-4 text-primary animate-pulse ml-2">
           🔊
         </div>
       </div>
@@ -115,6 +134,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useStorage } from '../composables/useStorage'
 
 const props = defineProps(['engine'])
+const emit = defineEmits(['edit'])
 const { usePersistedRef, getItem } = useStorage()
 
 const tracks = usePersistedRef('playlist_tracks', [])
@@ -122,6 +142,18 @@ const currentIndex = usePersistedRef('current_track_index', 0)
 const fileInput = ref(null)
 
 const currentTrack = computed(() => tracks.value[currentIndex.value])
+
+const removeTrack = (index) => {
+  if (confirm('Remove this track from playlist?')) {
+    if (currentIndex.value === index) {
+      props.engine.stop()
+    }
+    tracks.value.splice(index, 1)
+    if (currentIndex.value >= tracks.value.length) {
+      currentIndex.value = Math.max(0, tracks.value.length - 1)
+    }
+  }
+}
 
 // Watch for thumbnail assignment from Gallery
 watch(() => getItem('currentThumbnail'), (newThumb) => {
@@ -141,7 +173,7 @@ const handleFileUpload = (event) => {
       title: file.name.replace(/\.[^/.]+$/, ""),
       artist: 'UNKNOWN ARTIST',
       url,
-      thumbnail: getItem('currentThumbnail') || null,
+      thumbnail: null,
       effects: {
         playbackRate: 1.0,
         reverbWet: 0.0,
@@ -207,7 +239,7 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-// Persist effects back to track object when they change
+// Only sync effects to the track when explicitly playing that track
 watch([
   () => props.engine.playbackRate.value,
   () => props.engine.reverbWet.value,
@@ -215,7 +247,7 @@ watch([
   () => props.engine.pitch.value
 ], ([rate, reverb, bass, pitch]) => {
   if (currentTrack.value) {
-    currentTrack.value.effects = { playbackRate: rate, reverbWet: reverb, bassGain: bass, pitch }
+    // Note: We don't auto-save here anymore, we'll use the TrackEditor Save button
   }
 })
 </script>

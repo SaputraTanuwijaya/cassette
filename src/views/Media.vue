@@ -16,11 +16,23 @@
     <!-- Player and Effects Section -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-12">
       <div class="lg:col-span-2">
-        <AudioPlayer :engine="engine" />
+        <AudioPlayer 
+          :engine="engine" 
+          @edit="handleEdit"
+        />
       </div>
       <div>
         <EffectsPanel :engine="engine" />
       </div>
+    </section>
+
+    <!-- Track Editor Section (Conditional) -->
+    <section v-if="editingTrack !== null">
+      <TrackEditor 
+        :track="tracks[editingTrack]" 
+        :engine="engine"
+        @close="editingTrack = null"
+      />
     </section>
 
     <!-- Video Monitor Section -->
@@ -31,16 +43,29 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAudioEngine } from '../composables/useAudioEngine'
+import { useStorage } from '../composables/useStorage'
 import EQVisualizer from '../components/EQVisualizer.vue'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import EffectsPanel from '../components/EffectsPanel.vue'
 import VideoPlayer from '../components/VideoPlayer.vue'
+import TrackEditor from '../components/TrackEditor.vue'
 
 const engine = useAudioEngine()
+const { usePersistedRef } = useStorage()
+const tracks = usePersistedRef('playlist_tracks', [])
+const editingTrack = ref(null)
+
+const handleEdit = (index) => {
+  editingTrack.value = index
+  // Scroll to editor
+  setTimeout(() => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }, 100)
+}
 
 onMounted(async () => {
-  // Pre-initialize context on mount if possible, or wait for user interaction
+  // Initialization logic
 })
 </script>
