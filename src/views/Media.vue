@@ -39,7 +39,7 @@
 
     <!-- Video Monitor Section -->
     <section class="max-w-3xl mx-auto">
-      <VideoPlayer />
+      <VideoPlayer :tracks="tracks" :engine="engine" />
     </section>
   </div>
 </template>
@@ -55,13 +55,12 @@ import VideoPlayer from '../components/VideoPlayer.vue'
 import TrackEditor from '../components/TrackEditor.vue'
 
 const engine = useAudioEngine()
-const { usePersistedRef } = useStorage()
+const { usePersistedRef, getFile } = useStorage()
 const tracks = usePersistedRef('playlist_tracks', [])
 const editingTrack = ref(null)
 
 const handleEdit = (index) => {
   editingTrack.value = index
-  // Scroll to editor
   setTimeout(() => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }, 100)
@@ -75,6 +74,28 @@ const handleReconnect = ({ trackId, url }) => {
 }
 
 onMounted(async () => {
-  // Initialization logic
+  // --- AUTO-LINK SYSTEM ---
+  // Restore Blob URLs from IndexedDB for all tracks
+  for (const track of tracks.value) {
+    // Restore Audio
+    try {
+      const audioFile = await getFile(`audio_${track.id}`)
+      if (audioFile) {
+        track.url = URL.createObjectURL(audioFile)
+      }
+    } catch (e) {
+      console.error(`Failed to auto-link audio for ${track.title}`)
+    }
+
+    // Restore Video
+    try {
+      const videoFile = await getFile(`video_${track.id}`)
+      if (videoFile) {
+        track.videoUrl = URL.createObjectURL(videoFile)
+      }
+    } catch (e) {
+      console.error(`Failed to auto-link video for ${track.title}`)
+    }
+  }
 })
 </script>

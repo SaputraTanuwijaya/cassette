@@ -135,7 +135,7 @@ import { useStorage } from '../composables/useStorage'
 
 const props = defineProps(['engine', 'tracks'])
 const emit = defineEmits(['edit'])
-const { usePersistedRef, getItem } = useStorage()
+const { usePersistedRef, getItem, saveFile } = useStorage()
 
 const currentIndex = usePersistedRef('current_track_index', 0)
 const fileInput = ref(null)
@@ -170,10 +170,15 @@ const triggerUpload = () => fileInput.value.click()
 
 const handleFileUpload = (event) => {
   const files = Array.from(event.target.files)
-  files.forEach(file => {
+  files.forEach(async (file) => {
+    const trackId = Date.now() + Math.random()
     const url = URL.createObjectURL(file)
+    
+    // Save to IndexedDB for permanent storage
+    await saveFile(`audio_${trackId}`, file)
+
     props.tracks.push({
-      id: Date.now() + Math.random(),
+      id: trackId,
       title: file.name.replace(/\.[^/.]+$/, ""),
       artist: 'UNKNOWN ARTIST',
       url,
@@ -187,9 +192,6 @@ const handleFileUpload = (event) => {
     })
   })
   event.target.value = ''
-  if (props.tracks.length === files.length) {
-    selectTrack(0)
-  }
 }
 
 const selectTrack = async (index) => {

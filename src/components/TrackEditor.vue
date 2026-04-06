@@ -29,6 +29,22 @@
             </button>
           </div>
         </div>
+        
+        <!-- Video Upload Section -->
+        <div class="p-4 bg-surface-2/50 rounded-2xl border border-border space-y-3">
+          <div class="flex justify-between items-center">
+            <label class="text-[9px] tracking-widest text-muted font-bold uppercase">Track Video</label>
+            <span v-if="track.videoUrl" class="text-[9px] text-primary font-bold">LINKED ✅</span>
+          </div>
+          <button 
+            @click="triggerVideoUpload"
+            class="w-full btn-ghost !py-2 !text-[9px] tracking-widest uppercase font-bold"
+          >
+            {{ track.videoUrl ? 'CHANGE VIDEO' : 'UPLOAD TRACK VIDEO' }}
+          </button>
+          <input type="file" ref="videoInput" class="hidden" accept="video/mp4" @change="handleVideoUpload" />
+        </div>
+
         <div class="flex flex-col gap-2 text-center">
           <p class="text-[10px] text-muted tracking-widest uppercase font-mono">
             {{ track.thumbnailId ? 'Asset Linked from Gallery' : 'No Asset Linked' }}
@@ -138,11 +154,12 @@ import { useStorage } from '../composables/useStorage'
 
 const props = defineProps(['track', 'engine'])
 const emit = defineEmits(['close', 'reconnect'])
-const { getItem } = useStorage()
+const { getItem, saveFile } = useStorage()
 
 const showGallery = ref(false)
 const gallery = ref(getItem('gallery_images', []))
 const reconnectInput = ref(null)
+const videoInput = ref(null)
 
 const resolvedThumbnail = computed(() => {
   if (!props.track.thumbnailId) return props.track.thumbnail 
@@ -154,6 +171,17 @@ const pickImage = (id) => {
   props.track.thumbnailId = id
   props.track.thumbnail = null 
   showGallery.value = false
+}
+
+const triggerVideoUpload = () => videoInput.value.click()
+
+const handleVideoUpload = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    await saveFile(`video_${props.track.id}`, file)
+    props.track.videoUrl = URL.createObjectURL(file)
+    alert('Studio footage linked to this track!')
+  }
 }
 
 const syncCurrentEffects = () => {
