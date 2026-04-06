@@ -228,6 +228,7 @@ watch([
   @apply bg-transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
+  background-color: var(--color-border);
+  border-radius: 9999px;
 }
 </style>
